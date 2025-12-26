@@ -64,7 +64,10 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db   = firebase.database();
-
+const email = document.getElementById("email");
+const pass  = document.getElementById("pass");
+const name  = document.getElementById("name");
+const photo = document.getElementById("photo");
 let myUser=null;
 let chatId=null;
 let peerId=null;
