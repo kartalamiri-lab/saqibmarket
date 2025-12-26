@@ -2,297 +2,224 @@
 <html lang="fa">
 <head>
 <meta charset="UTF-8">
-<title>SAQIB CHAT</title>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SAQIB Messenger</title>
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:tahoma;background:#0b0b0f;color:#fff}
+body{
+  margin:0;
+  font-family:system-ui;
+  background:#0f172a;
+  color:#fff;
+}
 .hidden{display:none}
-header{background:#111;padding:14px;text-align:center;font-weight:bold}
-input,button{width:100%;padding:12px;margin:6px 0;border:none;border-radius:12px}
-input{background:#1c1c24;color:#fff}
-button{background:#4da3ff;color:#fff;font-weight:bold}
-.container{padding:14px}
-.user{display:flex;align-items:center;padding:10px;border-bottom:1px solid #222;cursor:pointer}
-.user img{width:48px;height:48px;border-radius:50%;margin-left:10px}
-#messages{height:60vh;overflow-y:auto}
-.msg{max-width:70%;padding:10px;border-radius:18px;margin:6px}
-.me{background:#4da3ff;margin-left:auto}
-.other{background:#2a2a33}
-#sendBox{display:flex;gap:6px}
-#sendBox input{flex:1}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#111}
-nav button{flex:1;background:#111}
-img.avatar{width:80px;height:80px;border-radius:50%;margin:auto;display:block}
-ideo{
+header{
+  background:#020617;
+  padding:14px;
+  text-align:center;
+  font-weight:bold;
+}
+.page{padding:14px}
+input,button{
+  width:100%;
+  padding:14px;
+  margin:6px 0;
+  border:none;
+  border-radius:14px;
+  font-size:15px;
+}
+input{background:#1e293b;color:#fff}
+button{background:#2563eb;color:#fff;font-weight:600}
+.user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px;
+  border-bottom:1px solid #1e293b;
+  cursor:pointer;
+}
+.user img{
+  width:46px;height:46px;border-radius:50%;
+}
+.status{font-size:12px;color:#22c55e}
+#messages{height:60vh;overflow:auto}
+.msg{
+  padding:10px 14px;
+  border-radius:16px;
+  margin:6px 0;
+  max-width:75%;
+}
+.me{background:#2563eb;margin-left:auto}
+.other{background:#1e293b}
+.bottom{
+  display:flex;
+  gap:6px;
+}
+.bottom input{flex:1}
+nav{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  display:flex;
+  background:#020617;
+}
+nav button{
+  flex:1;
+  background:#020617;
+  border-radius:0;
+}
+nav button.active{background:#2563eb}
+.story{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+}
+.story div{
+  width:70px;
+  text-align:center;
+  font-size:12px;
+}
+.story img{
+  width:60px;height:60px;border-radius:50%;
+  border:2px solid #2563eb;
+}
+video{
   width:100%;
   max-height:220px;
-  border-radius:12px;
-  margin:6px 0;
+  border-radius:14px;
   background:#000;
+  margin:6px 0;
 }
+.badge{color:#3b82f6;font-size:12px}
 </style>
- 
-
-<</stye
 </head>
 
 <body>
 
-<header>SAQIB CHAT</header>
+<header>SAQIB</header>
 
 <!-- LOGIN -->
-<div id="login" class="container">
-  <input id="email" placeholder="ایمیل">
-  <input id="pass" type="password" placeholder="پسورد">
-  <button onclick="loginEmail()">ورود ایمیل</button>
-  <hr>
-  <input id="phone" placeholder="+90xxxxxxxxx">
-  <div id="recaptcha"></div>
-  <button onclick="loginPhone()">ورود با شماره</button>
+<div id="login" class="page">
+<input id="phone" placeholder="شماره موبایل">
+<button onclick="sendCode()">ارسال کد</button>
+<div id="codeBox" class="hidden">
+<input id="code" placeholder="کد تایید">
+<button onclick="verify()">تایید</button>
+</div>
+</div>
+
+<!-- PROFILE -->
+<div id="profile" class="page hidden">
+<input id="name" placeholder="نام و فامیلی">
+<input type="file" id="photo">
+<button onclick="saveProfile()">ادامه</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+<!-- STORIES -->
+<div class="page story">
+<div><img src="https://i.imgur.com/6VBx3io.png"><div>شما</div></div>
+<div><img src="https://i.imgur.com/6VBx3io.png"><div>علی</div></div>
+<div><img src="https://i.imgur.com/6VBx3io.png"><div>سارا</div></div>
 </div>
 
 <!-- USERS -->
-<div id="users" class="container hidden">
-  <h3>کاربران</h3>
-<div style="display:flex;gap:6px;margin-bottom:6px">
-  <button onclick="startCall(true)">📹 تماس تصویری</button>
-  <button onclick="startCall(false)">📞 تماس صوتی</button>
-</div>
-
-<video id="localVideo" autoplay muted playsinline class="hidden"></video>
-<video id="remoteVideo" autoplay playsinline class="hidden"></video>
-  
-  <div id="userList"></div>
-</div>
+<div id="users" class="page"></div>
 
 <!-- CHAT -->
-<div id="chat" class="container hidden">
-  <h3 id="chatTitle"></h3>
-  <button onclick="startCall(true)">📹 تماس تصویری</button>
-<button onclick="startCall(false)">📞 تماس صوتی</button>
+<div id="chat" class="page hidden">
+<b id="chatName"></b>
+<div>
+<button onclick="startCall(true)">📹</button>
+<button onclick="startCall(false)">📞</button>
+</div>
+
 <video id="localVideo" autoplay muted playsinline class="hidden"></video>
 <video id="remoteVideo" autoplay playsinline class="hidden"></video>
-  <div id=d="message></ssa>
-  <input type="file" id="imgMsg" accept="image/*">
-  <div id="sendBox">
-    <input id="msg" placeholder="پیام...">
-    <button onclick="sendText()">ارسال</button>
-  </div>
+
+<div id="messages"></div>
+<div class="bottom">
+<input id="msg" placeholder="پیام...">
+<button onclick="sendMsg()">➤</button>
+</div>
+</div>
+
 </div>
 
 <!-- SETTINGS -->
-<div id="settings" class="container hidden">
-  <img id="myPhoto" class="avatar">
-  <input id="myName" placeholder="نام">
-  <input type="file" id="photoFile" accept="image/*">
-  <button onclick="saveProfile()">ذخیره پروفایل</button>
-  <button onclick="show('users')">برگشت</button>
-  <button onclick="logout()" style="background:#ff4d4d">خروج</button>
+<div id="settings" class="page hidden">
+<h3>تنظیمات</h3>
+<p>👤 گلبدین ثاقب غور <span class="badge">✔️</span></p>
+<p>📞 تغییر شماره</p>
+<p>🔒 حریم خصوصی</p>
+<p>ℹ️ درباره SAQIB Messenger</p>
+<button onclick="logout()">خروج</button>
 </div>
 
 <nav id="nav" class="hidden">
-  <button onclick="show('users')">چت‌ها</button>
-  <button onclick="show('settings')">تنظیمات</button>
+<button onclick="show('users')" class="active">چت‌ها</button>
+<button onclick="show('settings')">تنظیمات</button>
 </nav>
 
 <script>
-firebase.initializeApp({
-  apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
-  authDomain: "saqibmarket.firebaseapp.com",
-  databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
-  projectId: "saqibmarket"
-});
+let me={},current=null;
 
-const auth=firebase.auth(),db=firebase.database();
-const IMGBB="b1dc9d785d3ed51f4f8373e3dacef685";
-let me,peer,chatId;
-
-// EMAIL LOGIN
-function loginEmail(){
-  auth.signInWithEmailAndPassword(email.value,pass.value)
-  .catch(()=>auth.createUserWithEmailAndPassword(email.value,pass.value));
+function sendCode(){
+  if(phone.value.length<6)return alert("شماره نادرست");
+  codeBox.classList.remove("hidden");
 }
-
-// PHONE LOGIN
-window.onload=()=>recaptcha=new firebase.auth.RecaptchaVerifier('recaptcha',{size:'invisible'});
-function loginPhone(){
-  auth.signInWithPhoneNumber(phone.value,recaptcha)
-  .then(r=>{let c=prompt("کد");return r.confirm(c)});
-}
-
-// AUTH
-auth.onAuthStateChanged(u=>{
-  if(!u)return;
-  me=u;
+function verify(){
+  if(code.value!=="1234")return alert("کد نادرست");
   login.classList.add("hidden");
-  users.classList.remove("hidden");
-  nav.classList.remove("hidden");
-  db.ref("users/"+u.uid).once("value",s=>{
-    if(!s.exists()) db.ref("users/"+u.uid).set({name:"کاربر",photo:"https://i.imgur.com/6VBx3io.png"});
-  });
-  loadUsers();loadMe();
-});
-
-// USERS
-function loadUsers(){
-  userList.innerHTML="";
-  db.ref("users").on("child_added",s=>{
-    if(s.key===me.uid)return;
-    let d=s.val();
-    let div=document.createElement("div");
-    div.className="user";
-    div.innerHTML=`<img src="${d.photo}"><span>${d.name}</span>`;
-    div.onclick=()=>openChat(s.key,d.name);
-    userList.appendChild(div);
-  });
-}
-
- });
-}
-
-// CHAT
-function openChat(uid,name){
-  peer=uid;
-  chatId=[me.uid,peer].sort().join("_");
-  show("chat");
-  chatTitle.innerText=name;
-  messages.innerHTML="";
-  db.ref("chats/"+chatId).off();
-  db.ref("chats/"+chatId).on("child_added",s=>{
-    let m=s.val(),d=document.createElement("div");
-    d.className="msg "+(m.uid==me.uid?"me":"other");
-    d.innerHTML=m.text.startsWith("http")?`<img src="${m.text}" width="200">`:m.text;
-    messages.appendChild(d);
-  });
-}
-
-// SEND TEXT
-function sendText(){
-  if(!msg.value)return;
-  db.ref("chats/"+chatId).push({uid:me.uid,text:msg.value});
-  msg.value="";
-}
-
-// SENimgMsg.onchange=()=>{
-  let f=imgMsg.files[0],fd=new FormData();
-  fd.append("image",f);
-  fetch("https://api.imgbb.com/1/upload?key="+IMGBB,{method:"POST",body:fd})
-  .then(r=>r.json()).then(d=>{
-    db.ref("chats/"+chatId).push({uid:me.uid,text:d.data.url});
-  });
-}
-
-// PROFILE
-function loadMe(){
-  db.ref("users/"+me.uid).once("value",s=>{
-    myName.value=s.val().name;
-    myPhoto.src=s.val().photo;
-  });
+  profile.classList.remove("hidden");
 }
 function saveProfile(){
-  let f=photoFile.files[0],fd=new FormData();
-  fd.append("image",f);
-  fetch("https://api.imgbb.com/1/upload?key="+IMGBB,{method:"POST",body:fd})
-  .then(r=>r.json()).then(d=>{
-    db.ref("users/"+me.uid).update({name:myName.value,photo:d.data.url});
-    myPhoto.src=d.data.url;
+  me.name=name.value||"کاربر";
+  profile.classList.add("hidden");
+  app.classList.remove("hidden");
+  nav.classList.remove("hidden");
+  loadUsers();
+}
+function loadUsers(){
+  users.innerHTML="";
+  ["علی","احمد","سارا"].forEach(u=>{
+    let d=document.createElement("div");
+    d.className="user";
+    d.innerHTML=`<img src="https://i.imgur.com/6VBx3io.png">
+    <div><div>${u}</div><div class="status">آنلاین</div></div>`;
+    d.onclick=()=>openChat(u);
+    users.appendChild(d);
   });
 }
-
-// UI
+function openChat(u){
+  current=u;
+  chatName.innerText=u;
+  chat.classList.remove("hidden");
+}
+function sendMsg(){
+  if(!msg.value)return;
+  let d=document.createElement("div");
+  d.className="msg me";
+  d.innerText=msg.value;
+  messages.appendChild(d);
+  msg.value="";
+}
 function show(id){
   users.classList.add("hidden");
   chat.classList.add("hidden");
   settings.classList.add("hidden");
   document.getElementById(id).classList.remove("hidden");
 }
+function logout(){location.reload()}
 
-// LOGOUT
-function logout(){auth.signOut();location.reload();}
-let pc, localStream;
-const servers = {iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
-
+/* CALL UI */
 async function startCall(video){
-  pc = new RTCPeerConnection(servers);
-
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video: video,
-    audio: true
-  });
-
-  localVideo.srcObject = localStream;
+  const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:video});
+  localVideo.srcObject=stream;
   localVideo.classList.remove("hidden");
-
-  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
-
-  pc.ontrack = e=>{
-    remoteVideo.srcObject = e.streams[0];
-    remoteVideo.classList.remove("hidden");
-  };
-
-  const callRef = db.ref("calls/"+chatId);
-  const offerCandidates = callRef.child("offerCandidates");
-  const answerCandidates = callRef.child("answerCandidates");
-
-  pc.onicecandidate = e=>{
-    if(e.candidate) offerCandidates.push(e.candidate.toJSON());
-  };
-
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  await callRef.set({offer});
-
-  callRef.child("answer").on("value",async s=>{
-    if(s.exists() && !pc.currentRemoteDescription){
-      await pc.setRemoteDescription(new RTCSessionDescription(s.val()));
-    }
-  });
-
-  answerCandidates.on("child_added",s=>{
-    pc.addIceCandidate(new RTCIceCandidate(s.val()));
-  });
 }
-
-// ANSWER CALL (خودکار)
-db.ref("calls").on("child_added",async s=>{
-  if(!peer || s.key!==chatId) return;
-
-  pc = new RTCPeerConnection(servers);
-  localStream = await navigator.mediaDevices.getUserMedia({audio:true,video:true});
-  localVideo.srcObject = localStream;
-  localVideo.classList.remove("hidden");
-
-  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
-
-  pc.ontrack=e=>{
-    remoteVideo.srcObject=e.streams[0];
-    remoteVideo.classList.remove("hidden");
-  };
-
-  const callRef=db.ref("calls/"+chatId);
-  const offerCandidates=callRef.child("offerCandidates");
-  const answerCandidates=callRef.child("answerCandidates");
-
-  pc.onicecandidate=e=>{
-    if(e.candidate) answerCandidates.push(e.candidate.toJSON());
-  };
-
-  const offer=s.val().offer;
-  await pc.setRemoteDescription(new RTCSessionDescription(offer));
-  const answer=await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  await callRef.update({answer});
-
-  offerCandidates.on("child_added",c=>{
-    pc.addIceCandidate(new RTCIceCandidate(c.val()));
-  });
-});
-  
 </script>
 
 </body>
