@@ -1,62 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="fa">
 <head>
   <meta charset="UTF-8">
-  <title>SAQIB MARKET LOGIN</title>
+  <title>SAQIB MARKET</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<h2>Login with Phone</h2>
+<h2>SAQIB MARKET</h2>
 
-<input id="phone" placeholder="+937XXXXXXXX" />
-<button onclick="sendCode()">Send Code</button>
+<div id="auth">
+  <input id="email" placeholder="Email"><br><br>
+  <input id="password" type="password" placeholder="Password"><br><br>
+  <button onclick="register()">ثبت نام</button>
+  <button onclick="login()">ورود</button>
+</div>
 
-<br><br>
+<div id="chat" style="display:none">
+  <h3 id="userEmail"></h3>
+  <input id="msg" placeholder="پیام"><br>
+  <button onclick="send()">ارسال</button>
+  <button onclick="logout()">خروج</button>
+  <div id="messages"></div>
+</div>
 
-<input id="code" placeholder="OTP Code" />
-<button onclick="verifyCode()">Verify</button>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
+  authDomain: "saqibmarket.firebaseapp.com",
+  databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
+  projectId: "saqibmarket",
+};
 
-<div id="recaptcha-container"></div>
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } 
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+function register(){
+  auth.createUserWithEmailAndPassword(email.value, password.value)
+    .catch(e=>alert(e.message));
+}
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
-    authDomain: "saqibmarket.firebaseapp.com",
-    projectId: "saqibmarket",
-    storageBucket: "saqibmarket.firebasestorage.app",
-    messagingSenderId: "937550272880",
-    appId: "1:937550272880:web:cad2fc2eaf41c7563557b5"
-  };
+function login(){
+  auth.signInWithEmailAndPassword(email.value, password.value)
+    .catch(e=>alert(e.message));
+}
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+auth.onAuthStateChanged(user=>{
+  if(user){
+    authDiv.style.display="none";
+    chat.style.display="block";
+    userEmail.innerText = user.email;
+    db.ref("chat").on("child_added",s=>{
+      messages.innerHTML += "<p>"+s.val()+"</p>";
+    });
+  }
+});
 
-  window.recaptchaVerifier = new RecaptchaVerifier(
-    auth,
-    "recaptcha-container",
-    { size: "normal" }
-  );
+function send(){
+  db.ref("chat").push(userEmail.innerText+": "+msg.value);
+  msg.value="";
+}
 
-  window.sendCode = () => {
-    const phone = document.getElementById("phone").value;
-    signInWithPhoneNumber(auth, phone, window.recaptchaVerifier)
-      .then(result => {
-        window.confirmationResult = result;
-        alert("Code sent");
-      })
-      .catch(error => alert(error.message));
-  };
-
-  window.verifyCode = () => {
-    const code = document.getElementById("code").value;
-    window.confirmationResult.confirm(code)
-      .then(() => alert("Login successful"))
-      .catch(() => alert("Wrong code"));
-  };
+function logout(){
+  auth.signOut();
+}
 </script>
 
 </body>
