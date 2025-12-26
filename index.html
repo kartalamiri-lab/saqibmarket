@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fa">
 <head>
@@ -9,7 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
 <style>
 *{box-sizing:border-box}
 body{
@@ -120,7 +119,7 @@ img.avatar{
 <div id="settings" class="container hidden">
   <img id="myPhoto" class="avatar">
   <input id="myName" placeholder="نام">
-  <input type="file" id="photoFile" accept="image/*">
+  <input id="myPhotoUrl" placeholder="لینک عکس">
   <button onclick="saveProfile()">ذخیره</button>
   <button onclick="logout()" style="background:#ff4d4d">خروج</button>
 </div>
@@ -141,7 +140,7 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db   = firebase.database();
-const storage = firebase.storage();
+
 let me=null, peer=null, chatId=null;
 
 /* LOGIN */
@@ -230,54 +229,27 @@ function loadMe(){
   });
 }
 
-    function saveProfile(){
-  const file = photoFile.files[0];
-
-  if(!myName.value) return alert("نام را وارد کن");
-
-  // فقط اسم عوض شود
-  if(!file){
-    db.ref("users/"+me.uid).update({
-      name: myName.value
-    });
-    alert("نام ذخیره شد");
-    return;
-  }
-
-  // آپلود عکس از گالری
-  const ref = storage.ref("profiles/"+me.uid+".jpg");
-
-  ref.put(file).then(()=>{
-    ref.getDownloadURL().then(url=>{
-      db.ref("users/"+me.uid).update({
-        name: myName.value,
-        photo: url
-      });
-      myPhoto.src = url;
-      alert("پروفایل ذخیره شد ✅");
-    });
+function saveProfile(){
+  db.ref("users/"+me.uid).update({
+    name:myName.value,
+    photo:myPhotoUrl.value
   });
-    }
-    n  nnp"   p"/* Ufun/  on sh.w(isers.classLis;
-  d("h.dden");
- .chat.classLis;
-  d("hidde.");
-  set.ings.classLis;
-  d("hidde.");
-  document.get.lementByI.(id).classList.r;
-o
+  alert("ذخیره شد");
+}
 
-("hidden");
+/* UI */
+function show(id){
+  users.classList.add("hidden");
+  chat.classList.add("hidden");
+  settings.classList.add("hidden");
+  document.getElementById(id).classList.remove("hidden");
+}
 
-
-
-/* LOG UT */
-fun
-  on l.gout(){
- ;
-  h.signOu.();
-  lo;
-t
+/* LOGOUT */
+function logout(){
+  auth.signOut();
+  location.reload();
+}
 </script>
 
 </body>
