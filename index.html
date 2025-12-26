@@ -1,86 +1,78 @@
+
 <!DOCTYPE html>
 <html lang="fa">
 <head>
 <meta charset="UTF-8">
 <title>SAQIB MARKET</title>
 
-<!-- Firebase COMPAT -->
+<!-- Firebase (Compat – پایدار) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <style>
 body{
   margin:0;
   font-family:tahoma;
-  background:linear-gradient(135deg,#141e30,#243b55);
+  background:radial-gradient(circle at top,#1e293b,#020617);
   color:#fff;
   text-align:center;
 }
 .card{
-  background:#0f172a;
   max-width:380px;
-  margin:25px auto;
-  padding:20px;
+  margin:30px auto;
+  background:#020617;
+  padding:22px;
   border-radius:18px;
-  box-shadow:0 10px 30px rgba(0,0,0,.6);
+  box-shadow:0 20px 40px rgba(0,0,0,.7);
 }
+h2{margin-bottom:10px}
 input,button{
   width:92%;
   padding:12px;
-  margin:6px;
+  margin:6px 0;
   border:none;
   border-radius:10px;
+  font-size:14px;
 }
+input{background:#0f172a;color:#fff}
 button{
-  background:linear-gradient(45deg,#ff416c,#ff4b2b);
-  color:white;
+  background:linear-gradient(45deg,#ff512f,#dd2476);
+  color:#fff;
   font-weight:bold;
 }
-img{
-  width:90px;height:90px;
-  border-radius:50%;
-  border:3px solid #ff4b2b;
-  object-fit:cover;
-}
-#chatBox{display:none}
+#chat,#chatBox{display:none}
 #messages{
   background:#020617;
-  padding:10px;
   border-radius:10px;
-  max-height:200px;
+  padding:10px;
+  max-height:220px;
   overflow:auto;
   margin-top:10px;
   text-align:right;
 }
+.msg{margin:4px 0}
+.me{color:#38bdf8}
+.other{color:#f472b6}
 </style>
 </head>
 
 <body>
 
-<h2>🔥 SAQIB MARKET 🔥</h2>
+<h2>🎬 SAQIB MARKET</h2>
 
-<!-- AUTH -->
-<div class="card" id="auth">
+<!-- LOGIN -->
+<div class="card" id="loginCard">
   <input id="email" placeholder="ایمیل">
   <input id="password" type="password" placeholder="پسورد">
   <button onclick="register()">ثبت نام</button>
   <button onclick="login()">ورود</button>
 </div>
 
-<!-- PROFILE -->
-<div class="card" id="profile" style="display:none">
-  <img id="avatar">
-  <input id="name" placeholder="نام نمایشی">
-  <input type="file" id="photo">
-  <button onclick="saveProfile()">ذخیره پروفایل</button>
-</div>
-
 <!-- CHAT -->
-<div class="card" id="chat" style="display:none">
-  <h4 id="me"></h4>
-  <input id="peer" placeholder="ایمیل طرف مقابل">
+<div class="card" id="chat">
+  <div id="me"></div>
+  <input id="peerEmail" placeholder="ایمیل طرف مقابل">
   <button onclick="startChat()">شروع چت خصوصی</button>
 
   <div id="chatBox">
@@ -92,93 +84,73 @@ img{
 </div>
 
 <script>
-// Firebase config
+/* 🔹 Firebase Config */
 firebase.initializeApp({
-  apiKey:"AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
-  authDomain:"saqibmarket.firebaseapp.com",
-  databaseURL:"https://saqibmarket-default-rtdb.firebaseio.com",
-  projectId:"saqibmarket",
-  storageBucket:"saqibmarket.appspot.com"
+  apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
+  authDomain: "saqibmarket.firebaseapp.com",
+  databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
+  projectId: "saqibmarket"
 });
 
-const auth=firebase.auth();
-const db=firebase.database();
-const st=firebase.storage();
+const firebaseAuth = firebase.auth();
+const db = firebase.database();
+let chatId = null;
 
-let chatId=null;
-
-// AUTH
+/* 🔹 ثبت نام */
 function register(){
-  auth.createUserWithEmailAndPassword(email.value,password.value)
+  firebaseAuth.createUserWithEmailAndPassword(email.value,password.value)
   .then(()=>alert("ثبت نام موفق ✅"))
   .catch(e=>alert(e.message));
 }
+
+/* 🔹 ورود */
 function login(){
-  auth.signInWithEmailAndPassword(email.value,password.value)
+  firebaseAuth.signInWithEmailAndPassword(email.value,password.value)
   .catch(e=>alert(e.message));
 }
 
-// STATE
-auth.onAuthStateChanged(u=>{
-  if(!u) return;
+/* 🔹 وضعیت لاگین */
+firebaseAuth.onAuthStateChanged(user=>{
+  if(!user) return;
 
-  document.getElementById("auth").style.display = "none";
-  document.getElementById("profile").style.display = "block";
-  document.getElementById("chat").style.display = "block";
-
-  document.getElementById("me").innerText = u.email;
-
-  firebase.database().ref("users/"+u.uid).once("value",s=>{
-    if(s.exists()){
-      document.getElementById("name").value = s.val().name || "";
-      document.getElementById("avatar").src = s.val().photo || "";
-    }
-  });
+  loginCard.style.display="none";
+  chat.style.display="block";
+  me.innerText = "👤 " + user.email;
 });
-   .ohSta  .ohStata  .
-n o s(){Prot   cou t u=tuth.csh.cstUsen;
-  i
-nst oil =phot[hotlesil];
- l;f(!fiu!) return alert(ertس ان")ان"ک 
-);
 
-  st.ref(se"(tari/"+u.uid)lidtlpit(f=>{
- ({
- ( =>{r    r.ref.gwLlowLUoadURL(urt=>{
->        db.res."eseruseri/t+u.         {
-       aname:lu ,
-     ,
-   orl url
-r  ur    });
-  t   t  tuvaturl;
-l;
-      alert("پروفپروفذی✅"ذخ✅" ✅
-  ✅   ; ; }  });
-H)
-// CHAiCfunction st(){Chat(n{t( cou t u=tuth.csh.;ntUinr;
-erif(!pu(r.valuv) return alert("ایمیل طرل مقابن");ن"زن");t"  chat(h=btoab[u.e[ail,pulr.valtva.sert()."();("_"));B) chaycox.style.displcsp;block";
-g megsaessTin=Tin="L 
-";
+/* 🔹 شروع چت خصوصی */
+function startChat(){
+  const user = firebaseAuth.currentUser;
+  if(!peerEmail.value) return alert("ایمیل طرف مقابل را وارد کن");
 
-  db.res."chatsha+sIafchafo ;();
-  db.res."chatsIa+chatId).In).cn(""he=>{
- ,s=>{n=t{ const esdocument.creaceElpeElp") ");
-    pei perTelrTel al();
-  g
-messages.aepe(ppe(l ;il}
+  chatId = btoa([user.email, peerEmail.value].sort().join("_"));
+  chatBox.style.display="block";
+  messages.innerHTML="";
 
+  db.ref("chats/"+chatId).off();
+  db.ref("chats/"+chatId).on("child_added",s=>{
+    const div = document.createElement("div");
+    div.className = "msg " + (s.val().from===user.email ? "me":"other");
+    div.innerText = s.val().from + ": " + s.val().text;
+    messages.appendChild(div);
+  });
 }
-fun);d(}
-s ni(((
- s ni(( m  i!a!uretuetu;   .b.res("cha.sI"+chaaasI"pusa(I(.ap:s"+m+":+aa"+m+":+alu;v v=l=;v v l=;=;
+
+/* 🔹 ارسال پیام */
+function send(){
+  if(!msg.value || !chatId) return;
+  db.ref("chats/"+chatId).push({
+    from: firebaseAuth.currentUser.email,
+    text: msg.value
+  });
+  msg.value="";
 }
-funct;
-t(
-uno tu
-(
- go tu
-    auOut;
- nOut;
+
+/* 🔹 خروج */
+function logout(){
+  firebaseAuth.signOut();
+  location.reload();
+}
 </script>
 
 </body>
