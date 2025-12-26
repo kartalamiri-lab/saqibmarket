@@ -40,10 +40,18 @@ firebase.initializeApp({
 });
 
 const auth = firebase.auth();
+  c/* اجبار به خروج *c/* اجبار به خروج *
+
+..signOu();
 
 document.getElementById("btn").onclick = () => {
   const email = document.getElementById("email").value;
   const pass  = document.getElementById("pass").value;
+
+  if(!email || !pass){
+    alert("ایمیل و پسورد را وارد کن");
+    return;
+  }
 
   auth.signInWithEmailAndPassword(email, pass)
   .catch(() => {
@@ -57,7 +65,20 @@ auth.onAuthStateChanged(u=>{
     document.getElementById("ok").classList.remove("hidden");
   }
 });
-</script>
+document.getElementById("btn").onclick = () => {
+  const email = document.getElementById("email").value;
+  const pass  = document.getElementById("pass").value;
+
+  auth.signInWithEmailAndPassword(email, pass)
+  .catch(() => {
+    return auth.createUserWithEmailAndPassword(email, pass);
+  });
+};
+auth.signOut();
+auth.onAuthStateChanged(u=>{
+  if(u){
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("ok").classList.remove(</script>
 
 </body>
 </html>
