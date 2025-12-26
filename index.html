@@ -1,59 +1,52 @@
 <!DOCTYPE html>
 <html lang="fa">
 <head>
-  <meta charset="UTF-8">
-  <title>SAQIB MARKET</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body{font-family:sans-serif;text-align:center;background:#f2f2f2;padding:20px}
-    input,button{width:90%;max-width:320px;padding:10px;margin:6px;font-size:16px}
-    button{background:#673ab7;color:#fff;border:none;border-radius:5px}
-    #chat{display:none}
-    #messages{height:200px;overflow:auto;background:#fff;padding:10px;margin:10px;border-radius:5px}
-  </style>
+<meta charset="UTF-8">
+<title>Saqib Market</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Firebase v8 (قدیمی ولی ساده و پایدار) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
-<body>
+
+<body style="text-align:center;font-family:sans-serif">
 
 <h2>SAQIB MARKET</h2>
 
 <div id="auth">
-  <input id="email" placeholder="email">
-  <input id="password" type="password" placeholder="password">
+  <input id="email" placeholder="Email"><br><br>
+  <input id="password" type="password" placeholder="Password"><br><br>
   <button onclick="register()">ثبت‌نام</button>
   <button onclick="login()">ورود</button>
 </div>
 
-<div id="chat">
-  <h3 id="userEmail"></h3>
-  <div id="messages"></div>
+<div id="chat" style="display:none">
+  <h3 id="user"></h3>
   <input id="msg" placeholder="پیام">
-  <button onclick="sendMsg()">ارسال</button>
-  <br><br>
+  <button onclick="send()">ارسال</button>
+  <div id="messages"></div>
+  <br>
   <button onclick="logout()">خروج</button>
 </div>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
-const firebaseConfig = {
+var firebaseConfig = {
   apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
   authDomain: "saqibmarket.firebaseapp.com",
   databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
-  projectId: "saqibmarket",
-  appId: "1:937550272880:web:cad2fc2eaf41c7563557b5"
+  projectId: "saqibmarket"
 };
-
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database();
+
+var auth = firebase.auth();
+var db = firebase.database();
 
 function register(){
   auth.createUserWithEmailAndPassword(
     email.value, password.value
-  );
+  ).alert("ثبت‌نام شد");
 }
 
 function login(){
@@ -66,33 +59,25 @@ auth.onAuthStateChanged(user=>{
   if(user){
     authDiv.style.display="none";
     chat.style.display="block";
-    userEmail.innerText=user.email;
-
-    db.ref("users/"+user.uid).set({
-      email:user.email
-    });
-
-    db.ref("messages").on("child_added",snap=>{
-      messages.innerHTML += "<div>"+snap.val().text+"</div>";
-    });
+    user.innerText=user.email;
   }
 });
 
-function sendMsg(){
+function send(){
   db.ref("messages").push({
-    text:msg.value,
-    uid:auth.currentUser.uid
+    user: auth.currentUser.email,
+    text: msg.value
   });
   msg.value="";
 }
 
+db.ref("messages").on("child_added", s=>{
+  messages.innerHTML += "<p>"+s.val().user+": "+s.val().text+"</p>";
+});
+
 function logout(){
   auth.signOut();
-  location.reload();
 }
-
-const authDiv=document.getElementById("auth");
-const chat=document.getElementById("chat");
 </script>
 
 </body>
