@@ -1,39 +1,102 @@
 
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>SAQIB MARKET</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body{
+      font-family:sans-serif;
+      text-align:center;
+      margin-top:50px;
+      background:#f5f5f5;
+    }
+    input,button{
+      padding:10px;
+      width:80%;
+      max-width:300px;
+      margin:8px;
+      font-size:16px;
+    }
+    button{
+      background:#6a1b9a;
+      color:white;
+      border:none;
+      border-radius:5px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>SAQIB MARKET LOGIN</h2>
+
+<input id="phone" placeholder="+93700000000">
+<br>
+<button onclick="sendCode()">ارسال کد</button>
+
+<br><br>
+
+<input id="code" placeholder="123456">
+<br>
+<button onclick="verifyCode()">تأیید</button>
+
+<div id="recaptcha-container"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
+    authDomain: "saqibmarket.firebaseapp.com",
+    databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
+    projectId: "saqibmarket",
+    storageBucket: "saqibmarket.appspot.com",
+    messagingSenderId: "937550272880",
+    appId: "1:937550272880:web:cad2fc2eaf41c7563557b5"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
   window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
     'recaptcha-container',
     { size: 'invisible' }
   );
 
-  function sendCode() {
+  function sendCode(){
     const phone = document.getElementById("phone").value;
     firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
-      .then((confirmationResult) => {
+      .then((confirmationResult)=>{
         window.confirmationResult = confirmationResult;
-        alert("Code sent (use test code)");
+        alert("کد ارسال شد (تستی: 123456)");
       })
-      .catch((error) => {
+      .catch((error)=>{
         alert(error.message);
       });
   }
 
-  function verifyCode() {
+  function verifyCode(){
     const code = document.getElementById("code").value;
     window.confirmationResult.confirm(code)
-      .then((result) => {
+      .then((result)=>{
         const user = result.user;
-        
-        // Save user to database
-        firebase.database().ref("users/" + user.uid).set({
+
+        firebase.database().ref("users/"+user.uid).set({
           phone: user.phoneNumber,
           uid: user.uid,
-          createdAt: Date.now()
+          time: Date.now()
         });
 
-        alert("Login success!");
+        alert("ورود موفق!");
       })
-      .catch((error) => {
+      .catch((error)=>{
         alert(error.message);
       });
   }
 </script>
+
+</body>
+</html>
