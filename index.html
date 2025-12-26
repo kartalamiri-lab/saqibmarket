@@ -121,62 +121,64 @@ function login(){
 // STATE
 auth.onAuthStateChanged(u=>{
   if(!u) return;
-  auth.style.display="none";
-  profile.style.display="block";
-  chat.style.display="block";
-  me.innerText=u.email;
 
-  db.ref("users/"+u.uid).once("value",s=>{
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("profile").style.display = "block";
+  document.getElementById("chat").style.display = "block";
+
+  document.getElementById("me").innerText = u.email;
+
+  firebase.database().ref("users/"+u.uid).once("value",s=>{
     if(s.exists()){
-      name.value=s.val().name;
-      avatar.src=s.val().photo;
+      document.getElementById("name").value = s.val().name || "";
+      document.getElementById("avatar").src = s.val().photo || "";
     }
   });
 });
+   .ohSta  .ohStata  .
+n o s(){Prot   cou t u=tuth.csh.cstUsen;
+  i
+nst oil =phot[hotlesil];
+ l;f(!fiu!) return alert(ertس ان")ان"ک 
+);
 
-// PROFILE
-function saveProfile(){
-  const u=auth.currentUser;
-  const file=photo.files[0];
-  if(!file) return alert("عکس انتخاب کن");
+  st.ref(se"(tari/"+u.uid)lidtlpit(f=>{
+ ({
+ ( =>{r    r.ref.gwLlowLUoadURL(urt=>{
+>        db.res."eseruseri/t+u.         {
+       aname:lu ,
+     ,
+   orl url
+r  ur    });
+  t   t  tuvaturl;
+l;
+      alert("پروفپروفذی✅"ذخ✅" ✅
+  ✅   ; ; }  });
+H)
+// CHAiCfunction st(){Chat(n{t( cou t u=tuth.csh.;ntUinr;
+erif(!pu(r.valuv) return alert("ایمیل طرل مقابن");ن"زن");t"  chat(h=btoab[u.e[ail,pulr.valtva.sert()."();("_"));B) chaycox.style.displcsp;block";
+g megsaessTin=Tin="L 
+";
 
-  st.ref("avatars/"+u.uid).put(file).then(r=>{
-    r.ref.getDownloadURL().then(url=>{
-      db.ref("users/"+u.uid).set({
-        name:name.value,
-        photo:url
-      });
-      avatar.src=url;
-      alert("پروفایل ذخیره شد ✅");
-    });
-  });
+  db.res."chatsha+sIafchafo ;();
+  db.res."chatsIa+chatId).In).cn(""he=>{
+ ,s=>{n=t{ const esdocument.creaceElpeElp") ");
+    pei perTelrTel al();
+  g
+messages.aepe(ppe(l ;il}
+
 }
-
-// CHAT
-function startChat(){
-  const u=auth.currentUser;
-  if(!peer.value) return alert("ایمیل طرف مقابل را بزن");
-
-  chatId=btoa([u.email,peer.value].sort().join("_"));
-  chatBox.style.display="block";
-  messages.innerHTML="";
-
-  db.ref("chats/"+chatId).off();
-  db.ref("chats/"+chatId).on("child_added",s=>{
-    const p=document.createElement("p");
-    p.innerText=s.val();
-    messages.appendChild(p);
-  });
+fun);d(}
+s ni(((
+ s ni(( m  i!a!uretuetu;   .b.res("cha.sI"+chaaasI"pusa(I(.ap:s"+m+":+aa"+m+":+alu;v v=l=;v v l=;=;
 }
-function send(){
-  if(!msg.value) return;
-  db.ref("chats/"+chatId).push(name.value+": "+msg.value);
-  msg.value="";
-}
-function logout(){
-  auth.signOut();
-  location.reload();
-}
+funct;
+t(
+uno tu
+(
+ go tu
+    auOut;
+ nOut;
 </script>
 
 </body>
