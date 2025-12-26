@@ -4,16 +4,24 @@
   <meta charset="UTF-8">
   <title>SAQIB MARKET</title>
 
-  <!-- Firebase SDKs (COMPAT – مهم) -->
+  <!-- Firebase SDKs (COMPAT) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <style>
     body { font-family: sans-serif; text-align: center; background:#f5f5f5; }
-    input, button { padding:10px; margin:5px; width:250px; }
+    input, button { padding:10px; margin:5px; width:260px; }
     #chat { display:none; }
-    #messages { background:#fff; padding:10px; margin-top:10px; max-width:400px; margin:auto; }
+    #messages {
+      background:#fff;
+      padding:10px;
+      margin-top:10px;
+      max-width:400px;
+      margin:auto;
+      text-align:right;
+    }
+    hr { max-width:400px; }
   </style>
 </head>
 <body>
@@ -28,13 +36,22 @@
   <button onclick="login()">ورود</button>
 </div>
 
-<!-- CHAT -->
+<!-- CHAT PRIVATE -->
 <div id="chat">
-  <h3 id="userEmail"></h3>
-  <input id="msg" placeholder="پیام">
-  <button onclick="send()">ارسال</button>
-  <button onclick="logout()">خروج</button>
-  <div id="messages"></div>
+  <h4 id="userEmail"></h4>
+
+  <input id="peerEmail" placeholder="ایمیل طرف مقابل">
+  <button onclick="startChat()">شروع چت خصوصی</button>
+
+  <hr>
+
+  <div id="chatBox" style="display:none">
+    <input id="msg" placeholder="پیام">
+    <button onclick="send()">ارسال</button>
+    <button onclick="logout()">خروج</button>
+
+    <div id="messages"></div>
+  </div>
 </div>
 
 <script>
@@ -46,56 +63,75 @@ const firebaseConfig = {
   projectId: "saqibmarket"
 };
 
-/* 🔹 Initialize Firebase (فقط یک بار) */
+/* 🔹 Initialize */
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db   = firebase.database();
 
+let currentChatId = null;
+
 /* 🔹 ثبت نام */
 function register(){
-  const email = document.getElementById("email").value;
-  const pass  = document.getElementById("password").value;
-
-  auth.createUserWithEmailAndPassword(email, pass)
-    .then(()=> alert("ثبت نام موفق بود ✅"))
-    .catch(e=> alert(e.message));
+  auth.createUserWithEmailAndPassword(
+    email.value,
+    password.value
+  ).then(()=>{
+    alert("ثبت نام موفق بود ✅");
+  }).catch(e=> alert(e.message));
 }
 
 /* 🔹 ورود */
 function login(){
-  const email = document.getElementById("email").value;
-  const pass  = document.getElementById("password").value;
-
-  auth.signInWithEmailAndPassword(email, pass)
-    .catch(e=> alert(e.message));
+  auth.signInWithEmailAndPassword(
+    email.value,
+    password.value
+  ).catch(e=> alert(e.message));
 }
 
 /* 🔹 وضعیت لاگین */
 auth.onAuthStateChanged(user=>{
   if(user){
-    document.getElementById("auth").style.display="none";
-    document.getElementById("chat").style.display="block";
-    document.getElementById("userEmail").innerText = user.email;
+    authDiv = document.getElementById("auth");
+    chatDiv = document.getElementById("chat");
 
-    db.ref("chat").off();
-    db.ref("chat").on("child_added",snap=>{
-      const p = document.createElement("p");
-      p.innerText = snap.val();
-      document.getElementById("messages").appendChild(p);
-    });
+    authDiv.style.display="none";
+    chatDiv.style.display="block";
+    userEmail.innerText = user.email;
   }
 });
 
-/* 🔹 ارسال پیام */
-function send(){
-  const text = document.getElementById("msg").value;
+/* 🔹 شروع چت خصوصی */
+function startChat(){
+  const peer = peerEmail.value;
   const user = auth.currentUser;
 
-  if(text && user){
-    db.ref("chat").push(user.email + ": " + text);
-    document.getElementById("msg").value="";
-  }
+  if(!peer) return alert("ایمیل طرف مقابل را وارد کن");
+
+  currentChatId = btoa(
+    [user.email, peer].sort().join("_")
+  );
+
+  chatBox.style.display = "block";
+  messages.innerHTML = "";
+
+  const ref = db.ref("privateChats/"+currentChatId+"/messages");
+  ref.off();
+  ref.on("child_added",snap=>{
+    const p = document.createElement("p");
+    p.innerText = snap.val();
+    messages.appendChild(p);
+  });
+}
+
+/* 🔹 ارسال پیام */
+function send(){
+  if(!msg.value || !currentChatId) return;
+
+  db.ref("privateChats/"+currentChatId+"/messages")
+    .push(auth.currentUser.email + ": " + msg.value);
+
+  msg.value="";
 }
 
 /* 🔹 خروج */
