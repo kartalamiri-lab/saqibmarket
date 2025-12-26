@@ -28,7 +28,17 @@ button{background:#4da3ff;color:#fff;font-weight:bold}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#111}
 nav button{flex:1;background:#111}
 img.avatar{width:80px;height:80px;border-radius:50%;margin:auto;display:block}
+ideo{
+  width:100%;
+  max-height:220px;
+  border-radius:12px;
+  margin:6px 0;
+  background:#000;
+}
 </style>
+ 
+
+<</stye
 </head>
 
 <body>
@@ -49,13 +59,25 @@ img.avatar{width:80px;height:80px;border-radius:50%;margin:auto;display:block}
 <!-- USERS -->
 <div id="users" class="container hidden">
   <h3>کاربران</h3>
+<div style="display:flex;gap:6px;margin-bottom:6px">
+  <button onclick="startCall(true)">📹 تماس تصویری</button>
+  <button onclick="startCall(false)">📞 تماس صوتی</button>
+</div>
+
+<video id="localVideo" autoplay muted playsinline class="hidden"></video>
+<video id="remoteVideo" autoplay playsinline class="hidden"></video>
+  
   <div id="userList"></div>
 </div>
 
 <!-- CHAT -->
 <div id="chat" class="container hidden">
   <h3 id="chatTitle"></h3>
-  <div id="messages"></div>
+  <button onclick="startCall(true)">📹 تماس تصویری</button>
+<button onclick="startCall(false)">📞 تماس صوتی</button>
+<video id="localVideo" autoplay muted playsinline class="hidden"></video>
+<video id="remoteVideo" autoplay playsinline class="hidden"></video>
+  <div id=d="message></ssa>
   <input type="file" id="imgMsg" accept="image/*">
   <div id="sendBox">
     <input id="msg" placeholder="پیام...">
@@ -130,6 +152,9 @@ function loadUsers(){
   });
 }
 
+ });
+}
+
 // CHAT
 function openChat(uid,name){
   peer=uid;
@@ -153,8 +178,7 @@ function sendText(){
   msg.value="";
 }
 
-// SEND IMAGE
-imgMsg.onchange=()=>{
+// SENimgMsg.onchange=()=>{
   let f=imgMsg.files[0],fd=new FormData();
   fd.append("image",f);
   fetch("https://api.imgbb.com/1/upload?key="+IMGBB,{method:"POST",body:fd})
@@ -190,6 +214,85 @@ function show(id){
 
 // LOGOUT
 function logout(){auth.signOut();location.reload();}
+let pc, localStream;
+const servers = {iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
+
+async function startCall(video){
+  pc = new RTCPeerConnection(servers);
+
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: video,
+    audio: true
+  });
+
+  localVideo.srcObject = localStream;
+  localVideo.classList.remove("hidden");
+
+  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+
+  pc.ontrack = e=>{
+    remoteVideo.srcObject = e.streams[0];
+    remoteVideo.classList.remove("hidden");
+  };
+
+  const callRef = db.ref("calls/"+chatId);
+  const offerCandidates = callRef.child("offerCandidates");
+  const answerCandidates = callRef.child("answerCandidates");
+
+  pc.onicecandidate = e=>{
+    if(e.candidate) offerCandidates.push(e.candidate.toJSON());
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await callRef.set({offer});
+
+  callRef.child("answer").on("value",async s=>{
+    if(s.exists() && !pc.currentRemoteDescription){
+      await pc.setRemoteDescription(new RTCSessionDescription(s.val()));
+    }
+  });
+
+  answerCandidates.on("child_added",s=>{
+    pc.addIceCandidate(new RTCIceCandidate(s.val()));
+  });
+}
+
+// ANSWER CALL (خودکار)
+db.ref("calls").on("child_added",async s=>{
+  if(!peer || s.key!==chatId) return;
+
+  pc = new RTCPeerConnection(servers);
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true,video:true});
+  localVideo.srcObject = localStream;
+  localVideo.classList.remove("hidden");
+
+  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+
+  pc.ontrack=e=>{
+    remoteVideo.srcObject=e.streams[0];
+    remoteVideo.classList.remove("hidden");
+  };
+
+  const callRef=db.ref("calls/"+chatId);
+  const offerCandidates=callRef.child("offerCandidates");
+  const answerCandidates=callRef.child("answerCandidates");
+
+  pc.onicecandidate=e=>{
+    if(e.candidate) answerCandidates.push(e.candidate.toJSON());
+  };
+
+  const offer=s.val().offer;
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer=await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  await callRef.update({answer});
+
+  offerCandidates.on("child_added",c=>{
+    pc.addIceCandidate(new RTCIceCandidate(c.val()));
+  });
+});
+  
 </script>
 
 </body>
