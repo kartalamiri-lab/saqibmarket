@@ -4,87 +4,30 @@
 <meta charset="UTF-8">
 <title>SAQIB CHAT</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:tahoma;
-  background:#0b0b0f;
-  color:#fff;
-}
+body{margin:0;font-family:tahoma;background:#0b0b0f;color:#fff}
 .hidden{display:none}
-header{
-  background:#111;
-  padding:14px;
-  text-align:center;
-  font-weight:bold;
-  font-size:18px;
-}
-input,button{
-  width:100%;
-  padding:12px;
-  margin:6px 0;
-  border:none;
-  border-radius:12px;
-  outline:none;
-}
+header{background:#111;padding:14px;text-align:center;font-weight:bold}
+input,button{width:100%;padding:12px;margin:6px 0;border:none;border-radius:12px}
 input{background:#1c1c24;color:#fff}
 button{background:#4da3ff;color:#fff;font-weight:bold}
 .container{padding:14px}
-
-.user{
-  display:flex;
-  align-items:center;
-  padding:10px;
-  border-bottom:1px solid #222;
-  cursor:pointer;
-}
-.user img{
-  width:48px;height:48px;border-radius:50%;
-  margin-left:10px;
-}
-.user span{font-size:15px}
-
-#messages{
-  height:60vh;
-  overflow-y:auto;
-  padding:10px;
-}
-.msg{
-  max-width:70%;
-  padding:10px 14px;
-  border-radius:18px;
-  margin:6px 0;
-  line-height:1.5;
-}
+.user{display:flex;align-items:center;padding:10px;border-bottom:1px solid #222;cursor:pointer}
+.user img{width:48px;height:48px;border-radius:50%;margin-left:10px}
+#messages{height:60vh;overflow-y:auto}
+.msg{max-width:70%;padding:10px;border-radius:18px;margin:6px}
 .me{background:#4da3ff;margin-left:auto}
 .other{background:#2a2a33}
-
-#sendBox{display:flex;gap:8px}
+#sendBox{display:flex;gap:6px}
 #sendBox input{flex:1}
-
-nav{
-  position:fixed;
-  bottom:0;left:0;right:0;
-  display:flex;
-  background:#111;
-}
-nav button{
-  flex:1;
-  border-radius:0;
-  background:#111;
-}
-nav button.active{background:#4da3ff}
-
-img.avatar{
-  width:80px;height:80px;border-radius:50%;
-  display:block;margin:10px auto;
-}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#111}
+nav button{flex:1;background:#111}
+img.avatar{width:80px;height:80px;border-radius:50%;margin:auto;display:block}
 </style>
 </head>
 
@@ -96,7 +39,11 @@ img.avatar{
 <div id="login" class="container">
   <input id="email" placeholder="ایمیل">
   <input id="pass" type="password" placeholder="پسورد">
-  <button onclick="doLogin()">ورود / ثبت‌نام</button>
+  <button onclick="loginEmail()">ورود ایمیل</button>
+  <hr>
+  <input id="phone" placeholder="+90xxxxxxxxx">
+  <div id="recaptcha"></div>
+  <button onclick="loginPhone()">ورود با شماره</button>
 </div>
 
 <!-- USERS -->
@@ -109,9 +56,10 @@ img.avatar{
 <div id="chat" class="container hidden">
   <h3 id="chatTitle"></h3>
   <div id="messages"></div>
+  <input type="file" id="imgMsg" accept="image/*">
   <div id="sendBox">
     <input id="msg" placeholder="پیام...">
-    <button onclick="send()">➤</button>
+    <button onclick="sendText()">ارسال</button>
   </div>
 </div>
 
@@ -119,18 +67,18 @@ img.avatar{
 <div id="settings" class="container hidden">
   <img id="myPhoto" class="avatar">
   <input id="myName" placeholder="نام">
-  <input id="myPhotoUrl" placeholder="لینک عکس">
-  <button onclick="saveProfile()">ذخیره</button>
+  <input type="file" id="photoFile" accept="image/*">
+  <button onclick="saveProfile()">ذخیره پروفایل</button>
+  <button onclick="show('users')">برگشت</button>
   <button onclick="logout()" style="background:#ff4d4d">خروج</button>
 </div>
 
-<nav class="hidden" id="nav">
-  <button id="tabUsers" onclick="show('users')">چت‌ها</button>
-  <button id="tabSettings" onclick="show('settings')">تنظیمات</button>
+<nav id="nav" class="hidden">
+  <button onclick="show('users')">چت‌ها</button>
+  <button onclick="show('settings')">تنظیمات</button>
 </nav>
 
 <script>
-/* FIREBASE CONFIG */
 firebase.initializeApp({
   apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
   authDomain: "saqibmarket.firebaseapp.com",
@@ -138,50 +86,43 @@ firebase.initializeApp({
   projectId: "saqibmarket"
 });
 
-const auth = firebase.auth();
-const db   = firebase.database();
+const auth=firebase.auth(),db=firebase.database();
+const IMGBB="b1dc9d785d3ed51f4f8373e3dacef685";
+let me,peer,chatId;
 
-let me=null, peer=null, chatId=null;
-
-/* LOGIN */
-function doLogin(){
-  const e=email.value,p=pass.value;
-  if(!e||!p) return alert("ایمیل و پسورد");
-  auth.signInWithEmailAndPassword(e,p)
-  .catch(()=>auth.createUserWithEmailAndPassword(e,p));
+// EMAIL LOGIN
+function loginEmail(){
+  auth.signInWithEmailAndPassword(email.value,pass.value)
+  .catch(()=>auth.createUserWithEmailAndPassword(email.value,pass.value));
 }
 
-/* AUTH STATE */
-auth.onAuthStateChanged(u=>{
-  if(!u) return;
-  me=u;
+// PHONE LOGIN
+window.onload=()=>recaptcha=new firebase.auth.RecaptchaVerifier('recaptcha',{size:'invisible'});
+function loginPhone(){
+  auth.signInWithPhoneNumber(phone.value,recaptcha)
+  .then(r=>{let c=prompt("کد");return r.confirm(c)});
+}
 
+// AUTH
+auth.onAuthStateChanged(u=>{
+  if(!u)return;
+  me=u;
   login.classList.add("hidden");
   users.classList.remove("hidden");
   nav.classList.remove("hidden");
-  show("users");
-
-  const ref=db.ref("users/"+u.uid);
-  ref.once("value",s=>{
-    if(!s.exists()){
-      ref.set({
-        name:"کاربر",
-        photo:"https://i.imgur.com/6VBx3io.png"
-      });
-    }
+  db.ref("users/"+u.uid).once("value",s=>{
+    if(!s.exists()) db.ref("users/"+u.uid).set({name:"کاربر",photo:"https://i.imgur.com/6VBx3io.png"});
   });
-
-  loadUsers();
-  loadMe();
+  loadUsers();loadMe();
 });
 
-/* LOAD USERS */
+// USERS
 function loadUsers(){
   userList.innerHTML="";
   db.ref("users").on("child_added",s=>{
-    if(s.key===me.uid) return;
-    const d=s.val();
-    const div=document.createElement("div");
+    if(s.key===me.uid)return;
+    let d=s.val();
+    let div=document.createElement("div");
     div.className="user";
     div.innerHTML=`<img src="${d.photo}"><span>${d.name}</span>`;
     div.onclick=()=>openChat(s.key,d.name);
@@ -189,55 +130,57 @@ function loadUsers(){
   });
 }
 
-/* OPEN CHAT */
+// CHAT
 function openChat(uid,name){
   peer=uid;
   chatId=[me.uid,peer].sort().join("_");
   show("chat");
   chatTitle.innerText=name;
   messages.innerHTML="";
-
   db.ref("chats/"+chatId).off();
   db.ref("chats/"+chatId).on("child_added",s=>{
-    const m=s.val();
-    const d=document.createElement("div");
-    d.className="msg "+(m.uid===me.uid?"me":"other");
-    d.innerText=m.text;
+    let m=s.val(),d=document.createElement("div");
+    d.className="msg "+(m.uid==me.uid?"me":"other");
+    d.innerHTML=m.text.startsWith("http")?`<img src="${m.text}" width="200">`:m.text;
     messages.appendChild(d);
-    messages.scrollTop=messages.scrollHeight;
   });
 }
 
-/* SEND */
-function send(){
-  if(!msg.value) return;
-  db.ref("chats/"+chatId).push({
-    uid:me.uid,
-    text:msg.value,
-    time:Date.now()
-  });
+// SEND TEXT
+function sendText(){
+  if(!msg.value)return;
+  db.ref("chats/"+chatId).push({uid:me.uid,text:msg.value});
   msg.value="";
 }
 
-/* SETTINGS */
+// SEND IMAGE
+imgMsg.onchange=()=>{
+  let f=imgMsg.files[0],fd=new FormData();
+  fd.append("image",f);
+  fetch("https://api.imgbb.com/1/upload?key="+IMGBB,{method:"POST",body:fd})
+  .then(r=>r.json()).then(d=>{
+    db.ref("chats/"+chatId).push({uid:me.uid,text:d.data.url});
+  });
+}
+
+// PROFILE
 function loadMe(){
   db.ref("users/"+me.uid).once("value",s=>{
-    const d=s.val();
-    myName.value=d.name;
-    myPhotoUrl.value=d.photo;
-    myPhoto.src=d.photo;
+    myName.value=s.val().name;
+    myPhoto.src=s.val().photo;
   });
 }
-
 function saveProfile(){
-  db.ref("users/"+me.uid).update({
-    name:myName.value,
-    photo:myPhotoUrl.value
+  let f=photoFile.files[0],fd=new FormData();
+  fd.append("image",f);
+  fetch("https://api.imgbb.com/1/upload?key="+IMGBB,{method:"POST",body:fd})
+  .then(r=>r.json()).then(d=>{
+    db.ref("users/"+me.uid).update({name:myName.value,photo:d.data.url});
+    myPhoto.src=d.data.url;
   });
-  alert("ذخیره شد");
 }
 
-/* UI */
+// UI
 function show(id){
   users.classList.add("hidden");
   chat.classList.add("hidden");
@@ -245,11 +188,8 @@ function show(id){
   document.getElementById(id).classList.remove("hidden");
 }
 
-/* LOGOUT */
-function logout(){
-  auth.signOut();
-  location.reload();
-}
+// LOGOUT
+function logout(){auth.signOut();location.reload();}
 </script>
 
 </body>
