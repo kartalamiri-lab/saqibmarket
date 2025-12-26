@@ -1,14 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="fa">
 <head>
 <meta charset="UTF-8">
 <title>SAQIB MARKET</title>
 
-<!-- Firebase (Compat – پایدار) -->
+<!-- Firebase Compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <style>
 body{
@@ -20,9 +20,9 @@ body{
 }
 .card{
   max-width:380px;
-  margin:30px auto;
+  margin:25px auto;
   background:#020617;
-  padding:22px;
+  padding:20px;
   border-radius:18px;
   box-shadow:0 20px 40px rgba(0,0,0,.7);
 }
@@ -41,7 +41,13 @@ button{
   color:#fff;
   font-weight:bold;
 }
-#chat,#chatBox{display:none}
+img{
+  width:90px;height:90px;
+  border-radius:50%;
+  object-fit:cover;
+  border:3px solid #ff4b2b;
+}
+#profile,#chat,#chatBox{display:none}
 #messages{
   background:#020617;
   border-radius:10px;
@@ -69,6 +75,14 @@ button{
   <button onclick="login()">ورود</button>
 </div>
 
+<!-- PROFILE -->
+<div class="card" id="profile">
+  <img id="avatar">
+  <input id="name" placeholder="نام نمایشی">
+  <input type="file" id="photo">
+  <button onclick="saveProfile()">ذخیره پروفایل</button>
+</div>
+
 <!-- CHAT -->
 <div class="card" id="chat">
   <div id="me"></div>
@@ -84,41 +98,70 @@ button{
 </div>
 
 <script>
-/* 🔹 Firebase Config */
+/* Firebase config */
 firebase.initializeApp({
   apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
   authDomain: "saqibmarket.firebaseapp.com",
   databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
-  projectId: "saqibmarket"
+  projectId: "saqibmarket",
+  storageBucket: "saqibmarket.appspot.com"
 });
 
 const firebaseAuth = firebase.auth();
 const db = firebase.database();
+const storage = firebase.storage();
+
 let chatId = null;
 
-/* 🔹 ثبت نام */
+/* ثبت نام */
 function register(){
   firebaseAuth.createUserWithEmailAndPassword(email.value,password.value)
   .then(()=>alert("ثبت نام موفق ✅"))
   .catch(e=>alert(e.message));
 }
 
-/* 🔹 ورود */
+/* ورود */
 function login(){
   firebaseAuth.signInWithEmailAndPassword(email.value,password.value)
   .catch(e=>alert(e.message));
 }
 
-/* 🔹 وضعیت لاگین */
+/* وضعیت لاگین */
 firebaseAuth.onAuthStateChanged(user=>{
   if(!user) return;
 
   loginCard.style.display="none";
+  profile.style.display="block";
   chat.style.display="block";
   me.innerText = "👤 " + user.email;
+
+  db.ref("users/"+user.uid).once("value",s=>{
+    if(s.exists()){
+      name.value = s.val().name || "";
+      avatar.src = s.val().photo || "";
+    }
+  });
 });
 
-/* 🔹 شروع چت خصوصی */
+/* ذخیره پروفایل */
+function saveProfile(){
+  const user = firebaseAuth.currentUser;
+  const file = photo.files[0];
+  if(!file) return alert("عکس انتخاب کن");
+
+  storage.ref("avatars/"+user.uid).put(file).then(r=>{
+    r.ref.getDownloadURL().then(url=>{
+      db.ref("users/"+user.uid).set({
+        name: name.value,
+        photo: url
+      });
+      avatar.src = url;
+      alert("پروفایل ذخیره شد ✅");
+    });
+  });
+}
+
+/* شروع چت خصوصی */
 function startChat(){
   const user = firebaseAuth.currentUser;
   if(!peerEmail.value) return alert("ایمیل طرف مقابل را وارد کن");
@@ -136,7 +179,7 @@ function startChat(){
   });
 }
 
-/* 🔹 ارسال پیام */
+/* ارسال پیام */
 function send(){
   if(!msg.value || !chatId) return;
   db.ref("chats/"+chatId).push({
@@ -146,7 +189,7 @@ function send(){
   msg.value="";
 }
 
-/* 🔹 خروج */
+/* خروج */
 function logout(){
   firebaseAuth.signOut();
   location.reload();
