@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="fa">
 <head>
 <meta charset="UTF-8">
-<title>Private Chat</title>
+<title>Cinematic Chat</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -14,59 +13,50 @@ body{
   margin:0;
   background:#0e0e11;
   color:#fff;
-  font-family:Arial;
+  font-family:tahoma;
 }
+.hidden{display:none}
 header{
   padding:15px;
   background:#121218;
-  display:flex;
-  align-items:center;
+  text-align:center;
+  font-size:18px;
 }
-header img{
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  margin-left:10px;
+#users .user{
+  padding:12px;
+  border-bottom:1px solid #222;
+  cursor:pointer;
 }
+#users .user:hover{background:#1a1a22}
 #messages{
-  padding:15px;
-  height:calc(100vh - 130px);
+  height:calc(100vh - 140px);
   overflow-y:auto;
+  padding:10px;
 }
 .msg{
   max-width:70%;
-  margin:8px 0;
-  padding:10px 14px;
-  border-radius:16px;
-  line-height:1.4;
-}
-.me{
-  background:linear-gradient(135deg,#4da3ff,#357bff);
-  margin-left:auto;
-}
-.other{
-  background:#2a2a33;
-}
-#sendBox{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  display:flex;
-  background:#121218;
+  margin:6px 0;
   padding:10px;
+  border-radius:14px;
+}
+.me{background:#4da3ff;margin-left:auto}
+.other{background:#2a2a33}
+#sendBox{
+  display:flex;
+  padding:10px;
+  background:#121218;
 }
 #sendBox input{
   flex:1;
-  padding:12px;
+  padding:10px;
   border:none;
   border-radius:20px;
-  outline:none;
 }
 #sendBox button{
-  margin-right:10px;
-  padding:10px 16px;
+  margin-right:8px;
   border:none;
   border-radius:50%;
+  width:40px;
   background:#4da3ff;
   color:#fff;
 }
@@ -74,97 +64,96 @@ header img{
 </head>
 <body>
 
-<header>
-  <img id="peerPhoto">
-  <span id="peerName">Chat</span>
-</header>
+<header id="title">در حال اتصال...</header>
 
-<div id="messages"></div>
+<!-- لیست کاربران -->
+<div id="users" class="hidden"></div>
 
-<div id="sendBox">
-  <input id="msg" placeholder="پیام بنویس...">
-  <button onclick="send()">➤</button>
+<!-- صفحه چت -->
+<div id="chat" class="hidden">
+  <div id="messages"></div>
+  <div id="sendBox">
+    <input id="msg" placeholder="پیام...">
+    <button onclick="send()">➤</button>
+  </div>
 </div>
 
 <script>
-/* 🔥 Firebase */
+// 🔥 Firebase config
 firebase.initializeApp({
-  apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
-  authDomain: "saqibmarket.firebaseapp.com",
-  databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
-  projectId: "saqibmarket"
+  apiKey: "API_KEY",
+  authDomain: "PROJECT.firebaseapp.com",
+  databaseURL: "https://PROJECT-default-rtdb.firebaseio.com",
+  projectId: "PROJECT"
 });
 
 const auth = firebase.auth();
 const db   = firebase.database();
 
-/* گرفتن UID طرف مقابل */
-const params = new URLSearchParams(location.search);
-const peerId = params.get("uid");
+let currentUser = null;
+let currentChat = null;
 
-if(!peerId){
-  alert("چت نامعتبر است");
-  location.href="chats.html";
-}
+// ✅ لاگین خودکار
+auth.signInAnonymously();
 
-let chatId = null;
+auth.onAuthStateChanged(u=>{
+  if(!u) return;
+  currentUser = u;
+  title.innerText = "انتخاب کاربر برای چت";
 
-/* 🔐 بعد از لاگین */
-auth.onAuthStateChanged(user=>{
-  if(!user){
-    location.href="index.html";
-    return;
-  }
-
-  /* ذخیره پروفایل خود کاربر (اگر نبود) */
-  db.ref("users/"+user.uid).update({
-    email: user.email
+  // ذخیره کاربر
+  db.ref("users/"+u.uid).set({
+    name:"User-"+u.uid.slice(0,5)
   });
 
-  chatId = [user.uid, peerId].sort().join("_");
-
-  /* اطلاعات طرف مقابل */
-  db.ref("users/"+peerId).once("value",s=>{
-    const d=s.val()||{};
-    peerName.innerText = d.name || "User";
-    peerPhoto.src = d.photo || "https://i.imgur.com/6VBx3io.png";
-  });
-
-  /* دریافت پیام‌ها */
-  db.ref("chats/"+chatId+"/messages").limitToLast(100)
-    .on("child_added",snap=>{
-      const m = snap.val();
-      const div = document.createElement("div");
-      div.className = "msg " + (m.uid===user.uid?"me":"other");
-      div.innerText = m.text;
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
-  });
+  loadUsers();
 });
 
-/* ✉️ ارسال پیام */
-function send(){
-  if(!msg.value.trim()) return;
-
-  const u = auth.currentUser;
-  const text = msg.value;
-
-  const messageData = {
-    uid: u.uid,
-    text: text,
-    time: Date.now()
-  };
-
-  /* پیام */
-  db.ref("chats/"+chatId+"/messages").push(messageData);
-
-  /* آخرین پیام برای لیست چت‌ها */
-  db.ref("chats/"+chatId+"/last").set({
-    text: text,
-    time: Date.now(),
-    from: u.uid
+// 👥 لیست کاربران
+function loadUsers(){
+  users.classList.remove("hidden");
+  db.ref("users").on("value",snap=>{
+    users.innerHTML="";
+    snap.forEach(s=>{
+      if(s.key===currentUser.uid) return;
+      const d=s.val();
+      const div=document.createElement("div");
+      div.className="user";
+      div.innerText=d.name;
+      div.onclick=()=>openChat(s.key,d.name);
+      users.appendChild(div);
+    });
   });
+}
 
+// 💬 باز کردن چت
+function openChat(uid,name){
+  users.classList.add("hidden");
+  chat.classList.remove("hidden");
+  title.innerText=name;
+  messages.innerHTML="";
+
+  currentChat=[currentUser.uid,uid].sort().join("_");
+
+  db.ref("chats/"+currentChat).off();
+  db.ref("chats/"+currentChat).on("child_added",s=>{
+    const m=s.val();
+    const div=document.createElement("div");
+    div.className="msg "+(m.uid===currentUser.uid?"me":"other");
+    div.innerText=m.text;
+    messages.appendChild(div);
+    messages.scrollTop=messages.scrollHeight;
+  });
+}
+
+// ✉️ ارسال پیام
+function send(){
+  if(!msg.value) return;
+  db.ref("chats/"+currentChat).push({
+    uid:currentUser.uid,
+    text:msg.value,
+    time:Date.now()
+  });
   msg.value="";
 }
 </script>
