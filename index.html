@@ -1,47 +1,36 @@
-
 <!DOCTYPE html>
 <html lang="fa">
 <head>
   <meta charset="UTF-8">
   <title>SAQIB MARKET</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body{
-      font-family:sans-serif;
-      text-align:center;
-      margin-top:50px;
-      background:#f5f5f5;
-    }
-    input,button{
-      padding:10px;
-      width:80%;
-      max-width:300px;
-      margin:8px;
-      font-size:16px;
-    }
-    button{
-      background:#6a1b9a;
-      color:white;
-      border:none;
-      border-radius:5px;
-    }
+    body{font-family:sans-serif;text-align:center;background:#f2f2f2;padding:20px}
+    input,button{width:90%;max-width:320px;padding:10px;margin:6px;font-size:16px}
+    button{background:#673ab7;color:#fff;border:none;border-radius:5px}
+    #chat{display:none}
+    #messages{height:200px;overflow:auto;background:#fff;padding:10px;margin:10px;border-radius:5px}
   </style>
 </head>
 <body>
 
-<h2>SAQIB MARKET LOGIN</h2>
+<h2>SAQIB MARKET</h2>
 
-<input id="phone" placeholder="+93700000000">
-<br>
-<button onclick="sendCode()">ارسال کد</button>
+<div id="auth">
+  <input id="email" placeholder="email">
+  <input id="password" type="password" placeholder="password">
+  <button onclick="register()">ثبت‌نام</button>
+  <button onclick="login()">ورود</button>
+</div>
 
-<br><br>
-
-<input id="code" placeholder="123456">
-<br>
-<button onclick="verifyCode()">تأیید</button>
-
-<div id="recaptcha-container"></div>
+<div id="chat">
+  <h3 id="userEmail"></h3>
+  <div id="messages"></div>
+  <input id="msg" placeholder="پیام">
+  <button onclick="sendMsg()">ارسال</button>
+  <br><br>
+  <button onclick="logout()">خروج</button>
+</div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -49,53 +38,61 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
-    authDomain: "saqibmarket.firebaseapp.com",
-    databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
-    projectId: "saqibmarket",
-    storageBucket: "saqibmarket.appspot.com",
-    messagingSenderId: "937550272880",
-    appId: "1:937550272880:web:cad2fc2eaf41c7563557b5"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
+  authDomain: "saqibmarket.firebaseapp.com",
+  databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
+  projectId: "saqibmarket",
+  appId: "1:937550272880:web:cad2fc2eaf41c7563557b5"
+};
 
-  firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
-    'recaptcha-container',
-    { size: 'invisible' }
+function register(){
+  auth.createUserWithEmailAndPassword(
+    email.value, password.value
   );
+}
 
-  function sendCode(){
-    const phone = document.getElementById("phone").value;
-    firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
-      .then((confirmationResult)=>{
-        window.confirmationResult = confirmationResult;
-        alert("کد ارسال شد (تستی: 123456)");
-      })
-      .catch((error)=>{
-        alert(error.message);
-      });
+function login(){
+  auth.signInWithEmailAndPassword(
+    email.value, password.value
+  );
+}
+
+auth.onAuthStateChanged(user=>{
+  if(user){
+    authDiv.style.display="none";
+    chat.style.display="block";
+    userEmail.innerText=user.email;
+
+    db.ref("users/"+user.uid).set({
+      email:user.email
+    });
+
+    db.ref("messages").on("child_added",snap=>{
+      messages.innerHTML += "<div>"+snap.val().text+"</div>";
+    });
   }
+});
 
-  function verifyCode(){
-    const code = document.getElementById("code").value;
-    window.confirmationResult.confirm(code)
-      .then((result)=>{
-        const user = result.user;
+function sendMsg(){
+  db.ref("messages").push({
+    text:msg.value,
+    uid:auth.currentUser.uid
+  });
+  msg.value="";
+}
 
-        firebase.database().ref("users/"+user.uid).set({
-          phone: user.phoneNumber,
-          uid: user.uid,
-          time: Date.now()
-        });
+function logout(){
+  auth.signOut();
+  location.reload();
+}
 
-        alert("ورود موفق!");
-      })
-      .catch((error)=>{
-        alert(error.message);
-      });
-  }
+const authDiv=document.getElementById("auth");
+const chat=document.getElementById("chat");
 </script>
 
 </body>
