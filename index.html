@@ -13,7 +13,7 @@
 body{margin:0;background:#0e0e11;color:#fff;font-family:tahoma}
 .hidden{display:none}
 header{background:#121218;padding:14px;text-align:center;font-weight:bold}
-input,button{padding:10px;border:none;border-radius:10px;margin:6px;width:90%}
+input,button{padding:12px;border:none;border-radius:10px;margin:6px;width:90%}
 button{background:#4da3ff;color:#fff}
 #login,#users,#chat{padding:14px}
 .user{display:flex;align-items:center;padding:10px;border-bottom:1px solid #222;cursor:pointer}
@@ -33,14 +33,12 @@ button{background:#4da3ff;color:#fff}
 
 <!-- LOGIN -->
 <div id="login">
-  <input id="name" placeholder="نام">
-  <input id="photo" placeholder="لینک عکس پروفایل">
   <input id="email" placeholder="ایمیل">
   <input id="pass" type="password" placeholder="پسورد">
   <button onclick="login()">ورود / ثبت‌نام</button>
 </div>
 
-<!-- USER LIST -->
+<!-- USERS -->
 <div id="users" class="hidden">
   <h3>کاربران</h3>
   <div id="userList"></div>
@@ -64,14 +62,14 @@ firebase.initializeApp({
   projectId: "saqibmarket"
 });
 
-const auth=firebase.auth();
-const db=firebase.database();
+const auth = firebase.auth();
+const db   = firebase.database();
 
 let myUser=null;
 let chatId=null;
 let peerId=null;
 
-/* LOGIN */
+/* LOGIN / REGISTER */
 function login(){
   auth.signInWithEmailAndPassword(email.value,pass.value)
   .catch(()=>{
@@ -79,31 +77,36 @@ function login(){
   });
 }
 
+/* AUTH STATE */
 auth.onAuthStateChanged(u=>{
   if(!u) return;
   myUser=u;
 
-  db.ref("users/"+u.uid).set({
-    name:name.value||"User",
-    photo:photo.value||"https://i.imgur.com/6VBx3io.png"
+  const ref=db.ref("users/"+u.uid);
+  ref.once("value",s=>{
+    if(!s.exists()){
+      ref.set({
+        name:"کاربر",
+        photo:"https://i.imgur.com/6VBx3io.png"
+      });
+    }
   });
 
-  login.classList.add("hidden");
-  users.classList.remove("hidden");
-
+  loginDiv.style.display="none";
+  users.style.display="block";
   loadUsers();
 });
 
 /* LOAD USERS */
 function loadUsers(){
   userList.innerHTML="";
-  db.ref("users").on("child_added",snap=>{
-    if(snap.key===myUser.uid) return;
-    const d=snap.val();
+  db.ref("users").on("child_added",s=>{
+    if(s.key===myUser.uid) return;
+    const d=s.val();
     const div=document.createElement("div");
     div.className="user";
     div.innerHTML=`<img src="${d.photo}"><span>${d.name}</span>`;
-    div.onclick=()=>openChat(snap.key,d.name);
+    div.onclick=()=>openChat(s.key,d.name);
     userList.appendChild(div);
   });
 }
@@ -112,8 +115,8 @@ function loadUsers(){
 function openChat(uid,name){
   peerId=uid;
   chatId=[myUser.uid,peerId].sort().join("_");
-  users.classList.add("hidden");
-  chat.classList.remove("hidden");
+  users.style.display="none";
+  chat.style.display="block";
   chatTitle.innerText=name;
   messages.innerHTML="";
 
@@ -133,8 +136,7 @@ function send(){
   if(!text.value) return;
   db.ref("chats/"+chatId).push({
     uid:myUser.uid,
-    text:text.value,
-    time:Date.now()
+    text:text.value
   });
   text.value="";
 }
