@@ -1,64 +1,39 @@
-<!DOCTYPE html>
-<html lang="fa">
-<head>
-  <meta charset="UTF-8">
-  <title>Saqib Market Login</title>
-</head>
-<body>
-
-<h2>Login with Phone</h2>
-
-<input type="text" id="phone" placeholder="+937XXXXXXXX">
-<button onclick="sendOTP()">Send Code</button>
-
-<br><br>
-
-<input type="text" id="otp" placeholder="Enter OTP">
-<button onclick="verifyOTP()">Verify</button>
-
-<div id="recaptcha-container"></div>
-
-<!-- Firebase CDN -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
-    authDomain: "saqibmarket.firebaseapp.com",
-    projectId: "saqibmarket"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-
   window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
     'recaptcha-container',
-    { size: 'normal' }
+    { size: 'invisible' }
   );
 
-  function sendOTP() {
+  function sendCode() {
     const phone = document.getElementById("phone").value;
     firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
       .then((confirmationResult) => {
         window.confirmationResult = confirmationResult;
-        alert("Code sent");
+        alert("Code sent (use test code)");
       })
       .catch((error) => {
         alert(error.message);
       });
   }
 
-  function verifyOTP() {
-    const code = document.getElementById("otp").value;
+  function verifyCode() {
+    const code = document.getElementById("code").value;
     window.confirmationResult.confirm(code)
-      .then(() => {
-        alert("Login success");
+      .then((result) => {
+        const user = result.user;
+        
+        // Save user to database
+        firebase.database().ref("users/" + user.uid).set({
+          phone: user.phoneNumber,
+          uid: user.uid,
+          createdAt: Date.now()
+        });
+
+        alert("Login success!");
       })
       .catch((error) => {
         alert(error.message);
       });
   }
 </script>
-
-</body>
-</html>
