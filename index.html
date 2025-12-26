@@ -1,114 +1,93 @@
+
 <!DOCTYPE html>
 <html lang="fa">
 <head>
 <meta charset="UTF-8">
-<title>Saqib Market – Chats</title>
+<title>Private Chat</title>
 
-<!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-*{box-sizing:border-box}
 body{
   margin:0;
   background:#0e0e11;
   color:#fff;
-  font-family:Arial, sans-serif;
+  font-family:Arial;
 }
 header{
   padding:15px;
-  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-  font-size:20px;
-  font-weight:bold;
-}
-#list{
-  padding:10px;
-}
-.user{
+  background:#121218;
   display:flex;
   align-items:center;
-  padding:12px;
-  border-bottom:1px solid #1f1f1f;
-  cursor:pointer;
-  transition:.2s;
 }
-.user:hover{
-  background:#1b1b22;
-}
-.avatar{
-  width:55px;
-  height:55px;
+header img{
+  width:42px;
+  height:42px;
   border-radius:50%;
-  background:#333;
-  margin-left:12px;
-  position:relative;
-  overflow:hidden;
+  margin-left:10px;
 }
-.avatar img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
+#messages{
+  padding:15px;
+  height:calc(100vh - 130px);
+  overflow-y:auto;
 }
-.online{
-  width:12px;
-  height:12px;
-  background:#2ecc71;
-  border-radius:50%;
-  position:absolute;
-  bottom:4px;
-  left:4px;
-  border:2px solid #0e0e11;
+.msg{
+  max-width:70%;
+  margin:8px 0;
+  padding:10px 14px;
+  border-radius:16px;
+  line-height:1.4;
 }
-.info{
-  flex:1;
+.me{
+  background:linear-gradient(135deg,#4da3ff,#357bff);
+  margin-left:auto;
 }
-.name{
-  font-size:16px;
-  font-weight:bold;
+.other{
+  background:#2a2a33;
 }
-.last{
-  font-size:13px;
-  color:#aaa;
-  margin-top:4px;
-}
-.time{
-  font-size:12px;
-  color:#888;
-}
-.bottom{
+#sendBox{
   position:fixed;
   bottom:0;
   width:100%;
-  background:#121218;
   display:flex;
-  justify-content:space-around;
-  padding:10px 0;
+  background:#121218;
+  padding:10px;
 }
-.bottom span{
-  color:#aaa;
+#sendBox input{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:20px;
+  outline:none;
 }
-.bottom .active{
-  color:#4da3ff;
+#sendBox button{
+  margin-right:10px;
+  padding:10px 16px;
+  border:none;
+  border-radius:50%;
+  background:#4da3ff;
+  color:#fff;
 }
 </style>
 </head>
 <body>
 
-<header>SAQIB MARKET</header>
+<header>
+  <img id="peerPhoto">
+  <span id="peerName">Chat</span>
+</header>
 
-<div id="list"></div>
+<div id="messages"></div>
 
-<div class="bottom">
-  <span class="active">Chats</span>
-  <span>Groups</span>
-  <span>Calls</span>
-  <span>Profile</span>
+<div id="sendBox">
+  <input id="msg" placeholder="پیام بنویس...">
+  <button onclick="send()">➤</button>
 </div>
 
 <script>
-/* 🔹 Firebase config */
+/* 🔥 Firebase */
 firebase.initializeApp({
   apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
   authDomain: "saqibmarket.firebaseapp.com",
@@ -118,39 +97,76 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db   = firebase.database();
-const list = document.getElementById("list");
 
-/* 🔹 بعد از لاگین */
+/* گرفتن UID طرف مقابل */
+const params = new URLSearchParams(location.search);
+const peerId = params.get("uid");
+
+if(!peerId){
+  alert("چت نامعتبر است");
+  location.href="chats.html";
+}
+
+let chatId = null;
+
+/* 🔐 بعد از لاگین */
 auth.onAuthStateChanged(user=>{
   if(!user){
-    location.href="index.html"; // صفحه لاگین
+    location.href="index.html";
     return;
   }
 
-  db.ref("users").on("value",snap=>{
-    list.innerHTML="";
-    snap.forEach(u=>{
-      if(u.key === user.uid) return;
+  /* ذخیره پروفایل خود کاربر (اگر نبود) */
+  db.ref("users/"+user.uid).update({
+    email: user.email
+  });
 
-      const d = u.val();
+  chatId = [user.uid, peerId].sort().join("_");
+
+  /* اطلاعات طرف مقابل */
+  db.ref("users/"+peerId).once("value",s=>{
+    const d=s.val()||{};
+    peerName.innerText = d.name || "User";
+    peerPhoto.src = d.photo || "https://i.imgur.com/6VBx3io.png";
+  });
+
+  /* دریافت پیام‌ها */
+  db.ref("chats/"+chatId+"/messages").limitToLast(100)
+    .on("child_added",snap=>{
+      const m = snap.val();
       const div = document.createElement("div");
-      div.className="user";
-      div.innerHTML=`
-        <div class="avatar">
-          <img src="${d.photo || 'https://i.imgur.com/6VBx3io.png'}">
-          <div class="online"></div>
-        </div>
-        <div class="info">
-          <div class="name">${d.name || "User"}</div>
-          <div class="last">Tap to chat</div>
-        </div>
-        <div class="time">Now</div>
-      `;
-      div.onclick=()=>alert("چت خصوصی – مرحله بعد");
-      list.appendChild(div);
-    });
+      div.className = "msg " + (m.uid===user.uid?"me":"other");
+      div.innerText = m.text;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
   });
 });
+
+/* ✉️ ارسال پیام */
+function send(){
+  if(!msg.value.trim()) return;
+
+  const u = auth.currentUser;
+  const text = msg.value;
+
+  const messageData = {
+    uid: u.uid,
+    text: text,
+    time: Date.now()
+  };
+
+  /* پیام */
+  db.ref("chats/"+chatId+"/messages").push(messageData);
+
+  /* آخرین پیام برای لیست چت‌ها */
+  db.ref("chats/"+chatId+"/last").set({
+    text: text,
+    time: Date.now(),
+    from: u.uid
+  });
+
+  msg.value="";
+}
 </script>
 
 </body>
