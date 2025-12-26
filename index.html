@@ -3,69 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <title>SAQIB MARKET</title>
+
+  <!-- Firebase SDKs (COMPAT – مهم) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    body { font-family: sans-serif; text-align: center; background:#f5f5f5; }
+    input, button { padding:10px; margin:5px; width:250px; }
+    #chat { display:none; }
+    #messages { background:#fff; padding:10px; margin-top:10px; max-width:400px; margin:auto; }
+  </style>
 </head>
 <body>
 
 <h2>SAQIB MARKET</h2>
 
+<!-- AUTH -->
 <div id="auth">
-  <input id="email" placeholder="Email"><br><br>
-  <input id="password" type="password" placeholder="Password"><br><br>
+  <input id="email" type="email" placeholder="ایمیل"><br>
+  <input id="password" type="password" placeholder="پسورد"><br>
   <button onclick="register()">ثبت نام</button>
   <button onclick="login()">ورود</button>
 </div>
 
-<div id="chat" style="display:none">
+<!-- CHAT -->
+<div id="chat">
   <h3 id="userEmail"></h3>
-  <input id="msg" placeholder="پیام"><br>
+  <input id="msg" placeholder="پیام">
   <button onclick="send()">ارسال</button>
   <button onclick="logout()">خروج</button>
   <div id="messages"></div>
 </div>
 
 <script>
+/* 🔹 Firebase Config */
 const firebaseConfig = {
   apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
   authDomain: "saqibmarket.firebaseapp.com",
   databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
-  projectId: "saqibmarket",
+  projectId: "saqibmarket"
 };
 
+/* 🔹 Initialize Firebase (فقط یک بار) */
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
-const db = firebase.database();
+const db   = firebase.database();
 
+/* 🔹 ثبت نام */
 function register(){
-  auth.createUserWithEmailAndPassword(email.value, password.value)
-    .catch(e=>alert(e.message));
+  const email = document.getElementById("email").value;
+  const pass  = document.getElementById("password").value;
+
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(()=> alert("ثبت نام موفق بود ✅"))
+    .catch(e=> alert(e.message));
 }
 
+/* 🔹 ورود */
 function login(){
-  auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(e=>alert(e.message));
+  const email = document.getElementById("email").value;
+  const pass  = document.getElementById("password").value;
+
+  auth.signInWithEmailAndPassword(email, pass)
+    .catch(e=> alert(e.message));
 }
 
+/* 🔹 وضعیت لاگین */
 auth.onAuthStateChanged(user=>{
   if(user){
-    authDiv.style.display="none";
-    chat.style.display="block";
-    userEmail.innerText = user.email;
-    db.ref("chat").on("child_added",s=>{
-      messages.innerHTML += "<p>"+s.val()+"</p>";
+    document.getElementById("auth").style.display="none";
+    document.getElementById("chat").style.display="block";
+    document.getElementById("userEmail").innerText = user.email;
+
+    db.ref("chat").off();
+    db.ref("chat").on("child_added",snap=>{
+      const p = document.createElement("p");
+      p.innerText = snap.val();
+      document.getElementById("messages").appendChild(p);
     });
   }
 });
 
+/* 🔹 ارسال پیام */
 function send(){
-  db.ref("chat").push(userEmail.innerText+": "+msg.value);
-  msg.value="";
+  const text = document.getElementById("msg").value;
+  const user = auth.currentUser;
+
+  if(text && user){
+    db.ref("chat").push(user.email + ": " + text);
+    document.getElementById("msg").value="";
+  }
 }
 
+/* 🔹 خروج */
 function logout(){
   auth.signOut();
+  location.reload();
 }
 </script>
 
