@@ -1,78 +1,61 @@
-
 <!DOCTYPE html>
 <html lang="fa">
 <head>
   <meta charset="UTF-8">
   <title>Saqib Market Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
+<body>
 
-<body style="font-family:sans-serif;text-align:center;margin-top:40px">
+<h2>Login with Phone</h2>
 
-<h2>ورود با شماره موبایل</h2>
-
-<input id="phone" placeholder="+93XXXXXXXXX" style="padding:10px;width:80%"><br><br>
-
-<div id="recaptcha-container"></div>
-
-<button onclick="sendCode()" style="padding:10px 20px">ارسال کد</button>
+<input type="text" id="phone" placeholder="+937XXXXXXXX">
+<button onclick="sendOTP()">Send Code</button>
 
 <br><br>
 
-<input id="code" placeholder="کد تایید" style="padding:10px;width:80%"><br><br>
+<input type="text" id="otp" placeholder="Enter OTP">
+<button onclick="verifyOTP()">Verify</button>
 
-<button onclick="verifyCode()" style="padding:10px 20px">تایید و ورود</button>
+<div id="recaptcha-container"></div>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <script>
-  // 🔥 تنظیمات Firebase خودت (همونی که دادی)
   const firebaseConfig = {
     apiKey: "AIzaSyAHJ_2UP6n4RyGcuWmfa1hJA_n8B1C5C2Q",
     authDomain: "saqibmarket.firebaseapp.com",
-    databaseURL: "https://saqibmarket-default-rtdb.firebaseio.com",
-    projectId: "saqibmarket",
-    storageBucket: "saqibmarket.firebasestorage.app",
-    messagingSenderId: "937550272880",
-    appId: "1:937550272880:web:cad2fc2eaf41c7563557b5"
+    projectId: "saqibmarket"
   };
 
-  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
 
-  // reCAPTCHA
   window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
     'recaptcha-container',
     { size: 'normal' }
   );
 
-  // ارسال کد
-  function sendCode() {
+  function sendOTP() {
     const phone = document.getElementById("phone").value;
-    auth.signInWithPhoneNumber(phone, window.recaptchaVerifier)
-      .then(function (confirmationResult) {
+    firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
+      .then((confirmationResult) => {
         window.confirmationResult = confirmationResult;
-        alert("کد ارسال شد");
+        alert("Code sent");
       })
-      .catch(function (error) {
+      .catch((error) => {
         alert(error.message);
       });
   }
 
-  // تایید کد
-  function verifyCode() {
-    const code = document.getElementById("code").value;
+  function verifyOTP() {
+    const code = document.getElementById("otp").value;
     window.confirmationResult.confirm(code)
-      .then(function () {
-        alert("ورود موفق ✅");
-        // اینجا بعداً می‌فرستیم به چت
-        // window.location.href = "chat.html";
+      .then(() => {
+        alert("Login success");
       })
-      .catch(function () {
-        alert("کد اشتباه است ❌");
+      .catch((error) => {
+        alert(error.message);
       });
   }
 </script>
